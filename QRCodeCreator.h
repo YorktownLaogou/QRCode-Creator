@@ -486,6 +486,7 @@ int _GenerateECC(char* pDataBlock, int iBlockLen, int iECCLen)
 
 	// 计算CEE
 	char* pECC = (char*)GFforQR_Modulo((uint8_t*)pDividend, pDataBlockLen, iECCLen);
+	delete[] pDividend;
 
 	// 反向写回
 	for (int i = 0; i < iECCLen; i++)pDataBlock[iBlockLen + i] = pECC[iECCLen - i - 1];
@@ -507,11 +508,11 @@ int _GenerateECC(char* pDataBlock, int iBlockLen, int iECCLen)
 /************************************************************/
 
 
-/*------------------- 判断模式0123 --------------------*/
+/*---------------------- bit写入 ----------------------*/
 void BitWrite(void* pTarget, void* pSource, int iBegin, int iLength)
 {
-	auto* target = static_cast<uint8_t*>(pTarget);
-	auto* source = static_cast<const uint8_t*>(pSource);
+	unsigned char* target = static_cast<uint8_t*>(pTarget);
+	unsigned char* source = static_cast<uint8_t*>(pSource);
 	int Counter = iLength;
 
 	for (int i = 0; i < iLength; i++)
@@ -651,6 +652,9 @@ __forceinline char** DataCodewordSplitting(char* pcText, int iEccLevel, int QRLe
 		Counter += CodewordSplittingData[QRLevel][iEccLevel][4];
 	}
 
+	// 完事把原来的预处理char释放掉
+	delete[] pcText;
+
 	return DataBlock;
 }
 
@@ -708,6 +712,13 @@ __forceinline char* IntertwinedFinalMessageCodewords(char** CodewordBlocks, int 
 			FinalMessage[ShortBlockArea + (j - CodewordSplittingData[QRLevel][iEccLevel][2] - CodewordSplittingData[QRLevel][iEccLevel][0]) * CodewordSplittingData[QRLevel][iEccLevel][3] + (i - CodewordSplittingData[QRLevel][iEccLevel][1])] = CodewordBlocks[i][j];
 		}
 	}
+
+	// 完事把原来的预处理char释放掉
+	for (int i = 0; i < CodewordSplittingData[QRLevel][iEccLevel][1] + CodewordSplittingData[QRLevel][iEccLevel][3]; i++)
+	{
+		delete[] CodewordBlocks[i];
+	}
+	delete[] CodewordBlocks;
 
 	return FinalMessage;
 }
@@ -1212,5 +1223,7 @@ int CreateQRCode(char** QRCodeDot, char* pcText ,int iEccLevel)
 
 	// 输出
 	*QRCodeDot = QRCodeDot_;
+	delete[] pTextBuffer;
+
 	return Version;
 }
