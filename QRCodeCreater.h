@@ -1034,16 +1034,99 @@ __forceinline void SetupMask(char*** QRCodeDotGroup, char* QRCodeDot, int Versio
 }
 
 
-/*---------------------- 掩码评估 ---------------------*/
+/*------------------ Mask Evaluation ------------------*/
 __forceinline int AssessmentMask(char** QRCodeDotGroup, char** QRCodeDot, int Version)
 {
-	int Best = 0, BestRating = 0xFFFFFFFF;
+	int Best = 0;
+	unsigned int BestRating = 0xFFFFFFFF;
 
-	for(int i =0 ; i < 7 ; i++)
+	for(int i = 0 ; i < 7 ; i++)
 	{
 		int iRating = 0;
 		
-		// 判断比例
+		// Big chunk rating Penalty Rule 1
+		int penalty = 0;
+
+		for (int y = 0; y < SideOfVersion[Version] - 1; y++)
+		{
+			for (int x = 0; x < SideOfVersion[Version] - 1; x++)
+			{
+				unsigned char v = QRCodeDotGroup[i][y * SideOfVersion[Version] + x];
+				
+				// Only process unscored black or white tiles
+				if (v != 0x07 && v != 0x08) continue;
+
+				// Quick check if it is a 2x2 start
+				if (QRCodeDotGroup[i][y * SideOfVersion[Version] + x + 1] == v && QRCodeDotGroup[i][(y + 1) * SideOfVersion[Version] + x] == v && QRCodeDotGroup[i][(y + 1)* SideOfVersion[Version] + x + 1] == v)
+				{
+					// Try to expand the rectangle
+					int maxW = 2;
+					int maxH = 2;
+					bool expanded = true;
+
+					// x and y expand alternately — check the entire new edge each time
+					while (true)
+					{
+						bool grew = false;
+
+						// Try to expand to the right: check the whole new column [y .. y+maxH-1] at x+maxW
+						if (x + maxW < SideOfVersion[Version])
+						{
+							bool colUniform = true;
+							for (int dy = 0; dy < maxH; dy++)
+							{
+								if (QRCodeDotGroup[i][(y + dy) * SideOfVersion[Version] + (x + maxW)] != v)
+								{
+									colUniform = false;
+									break;
+								}
+							}
+							if (colUniform)
+							{
+								maxW++;
+								grew = true;
+							}
+						}
+
+						// Try to expand downward: check the whole new row [x .. x+maxW-1] at y+maxH
+						if (y + maxH < SideOfVersion[Version])
+						{
+							bool rowUniform = true;
+							for (int dx = 0; dx < maxW; dx++)
+							{
+								if (QRCodeDotGroup[i][(y + maxH) * SideOfVersion[Version] + (x + dx)] != v)
+								{
+									rowUniform = false;
+									break;
+								}
+							}
+							if (rowUniform)
+							{
+								maxH++;
+								grew = true;
+							}
+						}
+
+						if (!grew) break;
+					}
+
+
+					// Mark this block as graded
+					char marked = (v == 0x07) ? 0x0B : 0x0C;
+					for (int dy = 0; dy < maxH ; dy++)
+					{
+						for (int dx = 0; dx < maxW ; dx++)
+						{
+							QRCodeDotGroup[i][(y + dy) * SideOfVersion[Version] + x + dx] = marked;
+						}
+					}
+
+					iRating += 3;
+				}
+			}
+		}
+
+		// Proportional scoring Penalty Rule 4
 		int Balance = 0;
 		for(int j = 0 ; j < SizeOfVersion[Version] ; j ++)
 		{
@@ -1060,12 +1143,11 @@ __forceinline int AssessmentMask(char** QRCodeDotGroup, char** QRCodeDot, int Ve
 		int iIncrement = (int)((float)Balance / (float)SizeOfVersion[Version] * 200);
 		if (iIncrement > 19)iRating += iIncrement;
 
-
-		// 冒泡
+		// If it is smaller, replace the reference value
 		if(iRating < BestRating)
 		{
 			BestRating = iRating;
-			Best = 1;
+			Best = i;
 		}
 	}
 
