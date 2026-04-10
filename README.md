@@ -37,27 +37,28 @@ The QR code is generated in several clear steps:
 6. Write format information
 
 ## Project Structure
-.
-├── include
-│   └── QRcreator.h					Main encoding pipeline
-├── internal
-│   ├── byte
-│   │   ├── ByteEncoder.h			Convert to bitstream
-│   │   ├── FinalStream.h			Intertwined
-│   │   └── ECC
-│   │       └── ECCCalculator.h		Reed-Solomon error correction
-│   ├── Mask
-│   │   └── Mask.h					Mask evaluation
-│   ├── QRSpec
-│   │   ├── QRSpec.h				Constants provided by ISO/IEC 18004:2015 simplify calculations during generation.
-│   │   ├── QRSpec_Blocks.h
-│   │   ├── QRSpec_Capacity.h
-│   │   └── QRSpec_Patterns.h
-│   └── Structure
-│       └── StructureBuilder.h		Draw a fixed template
-└── demo
-    └── main.cpp					Simple demo
-
+```
+/include 
+    QRcreator.h             Main encoding pipeline 
+/internal 
+    /byte 
+        ByteEncoder.h       Convert to bitstream 
+        FinalStream.h       Intertwined 
+    /ECC 
+        ECCCalculator.h     Reed-Solomon error correction 
+    /Mask 
+        Mask.h              Mask evaluation 
+    /QRSpec
+        QRSpec.h            Constants provided by ISO/IEC 18004:2015 simplify calculations during generation. 
+        QRSpec_Blocks.h 
+        QRSpec_Capacity.h 
+        QRSpec_Patterns.h
+    /Structure 
+        StructureBuilder.h  Draw a fixed template 
+        QRMatrix.h              Storage structure of QR code
+    /demo
+        main.cpp                Simple demo
+```
 ## Reference
 
 ISO/IEC 18004:2015
